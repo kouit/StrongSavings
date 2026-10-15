@@ -1,10 +1,15 @@
+
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using StrongSavings.Api.Auth;
 using StrongSavings.Api.Enums;
 using StrongSavings.Api.Models;
 
 namespace StrongSavings.Api.Data;
 
-public class StrongSavingsDbContext : DbContext
+public class StrongSavingsDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<int>, int>
 {
     public StrongSavingsDbContext(
         DbContextOptions<StrongSavingsDbContext> options)
@@ -109,6 +114,20 @@ public class StrongSavingsDbContext : DbContext
         {
             entity.Property(meeting => meeting.Notes)
                 .HasMaxLength(5000);
+        });
+
+        // A login can be linked to at most one club member.
+        // A club member can have at most one linked login.
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.HasIndex(user => user.PersonId)
+                .IsUnique()
+                .HasFilter("[PersonId] IS NOT NULL");
+
+            entity.HasOne<Person>()
+                .WithOne()
+                .HasForeignKey<ApplicationUser>(user => user.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
